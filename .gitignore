@@ -5,10 +5,16 @@ __pycache__/
 .env
 
 logs/
-results/
+csv_summary/
+csv/
+csv_summary_deepseek/
 outputs/
+zresults with summary/
+zresults_nosummary/
+graphics/
 
 *.jsonl
-*.csv
+*.pkl
+
 
 .vscode/
