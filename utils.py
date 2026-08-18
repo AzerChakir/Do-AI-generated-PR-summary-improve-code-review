@@ -1,6 +1,8 @@
 ### Import Libraries
 import re
 
+from datasets import load_dataset
+
 ### Code Formatting
 def remove_diffs(code_snippet):
     diff_removed = ""
@@ -78,6 +80,97 @@ C. {option_c}
 D. {option_d}
 ### Answer with the letter symbol only. Answer:
 """
+
+acr_prompt_summary = """
+### The following {lang} code snippet has received a code review.
+[{lang}]
+{code_snippet}
+[/{lang}]
+[CODE REVIEW]
+{code_review}
+[/CODE REVIEW]
+[SUMMARY]
+{summary}
+[/SUMMARY]
+### Please generate a revised version of the code snippet according to the code review. Do not add explanations.
+[{lang}]
+"""
+
+ctr_prompt_summary = """
+### The following is a multiple choice question (with answers) that tests code review comprehension. 
+Question: Given this {lang} code snippet, what type of change is the code review asking for?
+[{lang}]
+{code_snippet}
+[/{lang}]
+[CODE REVIEW]
+{code_review}
+[/CODE REVIEW]
+[SUMMARY]
+{summary}
+[/SUMMARY]
+### Possible answers:
+A. {option_a}
+B. {option_b}
+C. {option_c}
+### Answer with the letter symbol only. Answer:
+"""
+
+cl_prompt_summary = """
+### The following is a multiple choice question (with answers) that tests code review comprehension. 
+Question: Given this {lang} code snippet, which line numbers is the code review asking to {ct}?
+[{lang}]
+{code_snippet}
+[/{lang}]
+[CODE REVIEW]
+{code_review}
+[/CODE REVIEW]
+[SUMMARY]
+{summary}
+[/SUMMARY]
+### Possible answers:
+A. line numbers {option_a}
+B. line numbers {option_b}
+C. line numbers {option_c}
+D. line numbers {option_d}
+### Answer with the letter symbol only. Answer:
+"""
+
+si_prompt_summary = """
+### The following is a multiple choice question (with answers) that tests code review comprehension. 
+Question: Given this {lang} code snippet, which code revision is the code review asking for?
+[{lang}]
+{code_snippet}
+[/{lang}]
+[CODE REVIEW]
+{code_review}
+[/CODE REVIEW]
+[SUMMARY]
+{summary}
+[/SUMMARY]
+### Possible answers:
+A. {option_a}
+B. {option_b}
+C. {option_c}
+D. {option_d}
+### Answer with the letter symbol only. Answer:
+"""
+
+
+### Dataset Loading
+def load_qa_dataframe(use_summary=False):
+    """Load the QA dataset as a pandas DataFrame.
+
+    Both datasets are stored as a single split ('Benchmark' for
+    Tomo-Melb/CodeReviewQA, 'train' for AzerChakir/CodeReviewWithSummaryQA);
+    pick whichever split is present and return it as a DataFrame. The easy /
+    hard difficulty is NOT a dataset split: it only selects which wrong-answer
+    column (loc_wrong_easy vs loc_wrong_hard / solution_wrong_easy vs
+    solution_wrong_hard) a task's prompt_combinations() uses.
+    """
+    repo = "AzerChakir/CodeReviewWithSummaryQA" if use_summary else "Tomo-Melb/CodeReviewQA"
+    ds = load_dataset(repo)
+    split = list(ds.keys())[0]
+    return ds[split].to_pandas()
 
 
 ### ACR Evaluators
