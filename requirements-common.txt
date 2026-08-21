@@ -1,0 +1,4 @@
+huggingface_hub==0.32.0
+pandas==2.3.3+computecanada
+tqdm==4.66.4
+transformers==4.51.1

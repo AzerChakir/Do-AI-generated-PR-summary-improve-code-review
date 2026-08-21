@@ -39,89 +39,14 @@ CTR_vLLM.py, CL_vLLM.py, SI_vLLM.py, and utils.py).
 
 MODEL_LIST = [
     # ── ≤3B models (1 GPU, --gpus=h100:1) ──────────────────────────
-    "meta-llama/Llama-3.2-1B-Instruct",
-    "meta-llama/Llama-3.2-3B-Instruct",
-    "Qwen/Qwen2.5-1.5B-Instruct",
-    "Qwen/Qwen2.5-3B-Instruct",
-    "Qwen/Qwen2.5-Coder-1.5B-Instruct",
-    "Qwen/Qwen2.5-Coder-3B-Instruct",
-    "deepseek-ai/deepseek-coder-1.3b-instruct",
-    "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
-    "tiiuae/Falcon3-1B-Instruct",
-    "tiiuae/Falcon3-3B-Instruct",
     "microsoft/Phi-3-mini-128k-instruct",
-    "01-ai/Yi-Coder-1.5B-Chat",
-    "ibm-granite/granite-3b-code-instruct-128k",
-    "ibm-granite/granite-3.0-3b-a800m-instruct",
-    "ibm-granite/granite-3.0-2b-instruct",
-    "LGAI-EXAONE/EXAONE-3.5-2.4B-Instruct",
-    "internlm/internlm2_5-1_8b-chat",
-    "stabilityai/stable-code-instruct-3b",
-
-    # ── ≤9B models (1 GPU, --gpus=h100:1) ──────────────────────────
     "meta-llama/CodeLlama-7b-Instruct-hf",
-    "meta-llama/Llama-3.1-8B-Instruct",
-    "google/codegemma-1.1-7b-it",
-    "google/gemma-2-9b-it",
-    "Qwen/Qwen2.5-7B-Instruct",
-    "Qwen/Qwen2.5-Coder-7B-Instruct",
-    "AIDC-AI/Marco-o1",
-    "deepseek-ai/deepseek-coder-7b-instruct-v1.5",
-    "deepseek-ai/deepseek-llm-7b-chat",
-    "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
-    "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
-    "tiiuae/Falcon3-7B-Instruct",
-    "baichuan-inc/Baichuan2-7B-Chat",
-    "01-ai/Yi-Coder-9B-Chat",
-    "01-ai/Yi-1.5-9B-Chat",
-    "ibm-granite/granite-8b-code-instruct-128k",
-    "ibm-granite/granite-3.0-8b-instruct",
-    "LGAI-EXAONE/EXAONE-3.5-7.8B-Instruct",
-
-    # ── ≤16B models (1 GPU, --gpus=h100:1) ─────────────────────────
     "meta-llama/CodeLlama-13b-Instruct-hf",
-    "Qwen/Qwen2.5-14B-Instruct",
-    "Qwen/Qwen2.5-Coder-14B-Instruct",
-    "deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct",
-    "deepseek-ai/DeepSeek-V2-Lite-Chat",
-    "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B",
-    "tiiuae/falcon-11B",
-    "tiiuae/Falcon3-10B-Instruct",
-    "baichuan-inc/Baichuan2-13B-Chat",
-    "WizardLMTeam/WizardLM-13B-V1.2",
-    "microsoft/Phi-3-medium-128k-instruct",
-    "microsoft/phi-4",
-    "bigcode/starcoder2-15b-instruct-v0.1",
-    "mistralai/Mistral-Nemo-Instruct-2407",
-
-    # ── ≤34B models (2 GPUs, --gpus=h100:2) ────────────────────────
     "meta-llama/CodeLlama-34b-Instruct-hf",
-    "google/gemma-2-27b-it",
-    "Qwen/Qwen2.5-32B-Instruct",
-    "Qwen/Qwen2.5-Coder-32B-Instruct",
-    "Qwen/QwQ-32B",
-    "NovaSky-AI/Sky-T1-32B-Preview",
-    "deepseek-ai/deepseek-coder-33b-instruct",
-    "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
-    "01-ai/Yi-1.5-34B-Chat",
-    "mistralai/Mistral-Small-Instruct-2409",
-    "ibm-granite/granite-34b-code-instruct-8k",
-    "internlm/internlm2_5-20b-chat",
-    "LGAI-EXAONE/EXAONE-3.5-32B-Instruct",
-
-    # ── ≤72B models (4 GPUs, --gpus=h100:4) ────────────────────────
-    "meta-llama/CodeLlama-70b-Instruct-hf",
-    "meta-llama/Llama-3.1-70B-Instruct",
-    "meta-llama/Llama-3.3-70B-Instruct",
-    "Qwen/Qwen2.5-72B-Instruct",
-    "deepseek-ai/deepseek-llm-67b-chat",
-    "deepseek-ai/DeepSeek-R1-Distill-Llama-70B",
-    "WizardLMTeam/WizardLM-70B-V1.0",
-    "LLM360/K2-Chat",
-    "tiiuae/falcon-40b-instruct",
+    "meta-llama/CodeLlama-70b-Instruct-hf"
 ]
 
-HF_TOKEN = "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"  # Your HF access token
+HF_TOKEN = "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"  # Your HF access token
 
 # --------------------------------------------------------------------------
 # WARNING: do not commit a real token to version control. If this file is
