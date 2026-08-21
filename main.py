@@ -46,7 +46,6 @@ MODEL_LIST = [
     "meta-llama/CodeLlama-70b-Instruct-hf"
 ]
 
-HF_TOKEN = "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"  # Your HF access token
 
 # --------------------------------------------------------------------------
 # WARNING: do not commit a real token to version control. If this file is
