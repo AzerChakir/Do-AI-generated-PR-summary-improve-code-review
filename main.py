@@ -40,11 +40,21 @@ CTR_vLLM.py, CL_vLLM.py, SI_vLLM.py, and utils.py).
 MODEL_LIST = [
     # ── ≤3B models (1 GPU, --gpus=h100:1) ──────────────────────────
     "microsoft/Phi-3-mini-128k-instruct",
-    "meta-llama/CodeLlama-7b-Instruct-hf",
-    "meta-llama/CodeLlama-13b-Instruct-hf",
-    "meta-llama/CodeLlama-34b-Instruct-hf",
-    "meta-llama/CodeLlama-70b-Instruct-hf"
+    "tiiuae/Falcon3-3B-Instruct",
+#    "01-ai/Yi-Coder-1.5B-Chat",
+    "ibm-granite/granite-3b-code-instruct-128k",
+    "ibm-granite/granite-3.0-3b-a800m-instruct",
+    #"ibm-granite/granite-3.0-2b-instruct",
+   # "LGAI-EXAONE/EXAONE-3.5-2.4B-Instruct",
+  #  "internlm/internlm2_5-1_8b-chat",
+ #   "stabilityai/stable-code-instruct-3b"
+#    "google/gemma-2-9b-it",
+#    "meta-llama/CodeLlama-7b-Instruct-hf",
+#    "meta-llama/CodeLlama-13b-Instruct-hf",
+#    "meta-llama/CodeLlama-34b-Instruct-hf",
+#    "meta-llama/CodeLlama-70b-Instruct-hf"
 ]
+
 
 
 # --------------------------------------------------------------------------

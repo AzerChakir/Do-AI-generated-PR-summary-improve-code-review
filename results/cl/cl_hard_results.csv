@@ -1,2 +1,3 @@
 model,c,cpp,csharp,go,java,javascript,php,python,ruby,overall
+Falcon3-3B-Instruct,0.0,3.0,1.0,4.0,2.0,1.0,3.0,0.0,1.0,1.6666666666666667
 Phi-3-mini-128k-instruct,18.0,18.0,29.0,38.0,26.0,25.0,43.0,33.0,30.0,28.88888888888889
