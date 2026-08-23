@@ -10,8 +10,7 @@
 #SBATCH --job-name=crqa-large
 
 # ── Environment setup ──────────────────────────────────────────────
-module load StdEnv/2023 cuda/12 python/3.11 scipy-stack/2024a
-
+module load StdEnv/2023 cuda/12 python/3.11 scipy-stack/2
 VENV_DIR="$HOME/crqa-venv"
 if [ ! -d "$VENV_DIR" ]; then
     echo "Creating virtual environment at $VENV_DIR ..."

@@ -12,6 +12,15 @@
 # ── Environment setup ──────────────────────────────────────────────
 module load StdEnv/2023 cuda/12 python/3.11 scipy-stack/2024a
 
+# ── Keep all caches off $HOME (tiny quota on Alliance) ─────────────
+SCRATCH="${SCRATCH:-$HOME/scratch}"
+export HF_HOME="$SCRATCH/hf/home"             # HF model weights / datasets
+export VLLM_CACHE_ROOT="$SCRATCH/hf/vllm"     # vLLM torch.compile cache (fixes Errno 122)
+export TRITON_CACHE_DIR="$SCRATCH/hf/triton"  # compiled Triton kernels
+export TORCHINDUCTOR_CACHE_DIR="$SCRATCH/hf/inductor"
+export PIP_CACHE_DIR="$SCRATCH/hf/pip"
+mkdir -p "$HF_HOME" "$VLLM_CACHE_ROOT" "$TRITON_CACHE_DIR" "$TORCHINDUCTOR_CACHE_DIR" "$PIP_CACHE_DIR"
+
 VENV_DIR="$HOME/crqa-venv"
 if [ ! -d "$VENV_DIR" ]; then
     echo "Creating virtual environment at $VENV_DIR ..."

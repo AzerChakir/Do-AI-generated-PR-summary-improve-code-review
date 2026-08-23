@@ -118,7 +118,8 @@ def main():
                                     guided_decoding = guided_decoding_params)
     
     
-    llm = LLM(model = model_name, tensor_parallel_size = torch.cuda.device_count(), max_model_len = 4000)
+    check_gpu_memory(gpu_memory_utilization = 0.80)
+    llm = LLM(model = model_name, tensor_parallel_size = torch.cuda.device_count(), max_model_len = 4000, gpu_memory_utilization = 0.80)
 
     # Run Inference
     c_save = pd.DataFrame(columns = ['combinations', 'softmax_probs', 'model_answers', 'correct_answers','GT'])

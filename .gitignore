@@ -12,9 +12,9 @@ outputs/
 zresults with summary/
 zresults_nosummary/
 graphics/
-
+results/
 *.jsonl
 *.pkl
-
+.gitignore
 
 .vscode/

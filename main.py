@@ -121,7 +121,7 @@ MODEL_LIST = [
     "tiiuae/falcon-40b-instruct",
 ]
 
-HF_TOKEN = "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"  # Your HF access token
+ # Your HF access token
 
 # --------------------------------------------------------------------------
 # WARNING: do not commit a real token to version control. If this file is
@@ -132,6 +132,7 @@ HF_TOKEN = "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"  # Your HF access token
 
 import argparse
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -220,29 +221,49 @@ def build_commands(model_name: str, hf_token: str, model_short: str, skip_existi
         # ACR
         out = expected_output_path("ACR", lang, model_short, results_dir=results_dir)
         if not (skip_existing and out.exists()):
-            yield ("ACR", lang, None, [sys.executable, str(SCRIPTS["ACR"]), hf_token, lang, model_name] , out)
+            yield ("ACR", lang, None, [sys.executable, str(SCRIPTS["ACR"]), hf_token, lang, model_name, "--summary"] , out)
 
         # CTR
         out = expected_output_path("CTR", lang, model_short, results_dir=results_dir)
         if not (skip_existing and out.exists()):
-            yield ("CTR", lang, None, [sys.executable, str(SCRIPTS["CTR"]), hf_token, lang, model_name] , out)
+            yield ("CTR", lang, None, [sys.executable, str(SCRIPTS["CTR"]), hf_token, lang, model_name, "--summary"] , out)
 
         # CL, easy + hard
         for mode in MODES:
             out = expected_output_path("CL", lang, model_short, mode, results_dir=results_dir)
             if not (skip_existing and out.exists()):
-                yield ("CL", lang, mode, [sys.executable, str(SCRIPTS["CL"]), hf_token, lang, mode, model_name], out)
+                yield ("CL", lang, mode, [sys.executable, str(SCRIPTS["CL"]), hf_token, lang, mode, model_name, "--summary"], out)
 
         # SI, easy + hard
         for mode in MODES:
             out = expected_output_path("SI", lang, model_short, mode, results_dir=results_dir)
             if not (skip_existing and out.exists()):
-                yield ("SI", lang, mode, [sys.executable, str(SCRIPTS["SI"]), hf_token, lang, mode, model_name] , out)
+                yield ("SI", lang, mode, [sys.executable, str(SCRIPTS["SI"]), hf_token, lang, mode, model_name, "--summary"] , out)
+
+
+def _checkpoint_csvs(results_dir: Path, model_name: str):
+    """Refresh all CSVs after each model finishes so completed work
+    survives Slurm timeouts. Never aborts the run."""
+    try:
+        generate_csvs(results_dir)
+        print(f"[CSV checkpoint] saved after {model_name}")
+    except Exception as exc:
+        print(f"[CSV checkpoint] WARNING: failed after {model_name}: {exc}")
 
 
 def run_all(model_list: list, hf_token: str, skip_existing: bool, dry_run: bool, results_dir: Path = RESULTS_DIR, with_summary: bool = True):
     ensure_result_dirs(results_dir)
     all_failures = []
+
+    def _on_sigterm(signum, frame):
+        print("\n[TIMEOUT] SIGTERM received - saving final CSVs before exit...")
+        try:
+            generate_csvs(results_dir)
+        except Exception as exc:
+            print(f"[TIMEOUT] final CSV save failed: {exc}")
+        sys.exit(143)
+
+    signal.signal(signal.SIGTERM, _on_sigterm)
 
     for model_name in model_list:
         model_short = model_name_short(model_name)
@@ -278,6 +299,9 @@ def run_all(model_list: list, hf_token: str, skip_existing: bool, dry_run: bool,
                 all_failures.append(f"{model_name}: {label}")
             else:
                 print(f"  done in {elapsed:.0f}s -> {out_path}")
+
+        if not dry_run:
+            _checkpoint_csvs(results_dir, model_name)
 
     if dry_run:
         print("\nDry run complete — no scripts were actually executed.")
@@ -323,6 +347,22 @@ def _score_mcqa_file(path: Path) -> tuple:
     return 100.0 * correct / n, n
 
 
+# Scores cache between CSV checkpoints: {pkl_path: ((mtime_ns, size), score)}
+_SCORE_CACHE = {}
+
+
+def _score_cached(path: Path, scorer) -> tuple:
+    """Re-score a .pkl only if it changed since the last checkpoint."""
+    st = path.stat()
+    key = (st.st_mtime_ns, st.st_size)
+    cached = _SCORE_CACHE.get(path)
+    if cached is not None and cached[0] == key:
+        return cached[1]
+    score = scorer(path)
+    _SCORE_CACHE[path] = (key, score)
+    return score
+
+
 def _collect_scores(results_dir: Path) -> dict:
     """Return {task label: {model: {lang: (score, n)}}} for every task."""
     out = {}
@@ -331,14 +371,14 @@ def _collect_scores(results_dir: Path) -> dict:
     for lang in LANGS:
         for f in (results_dir / "acr" / lang).glob("acr_*.pkl"):
             model = _model_from_filename(f.name, f"acr_{lang}_")
-            acr.setdefault(model, {})[lang] = _score_acr_file(f)
+            acr.setdefault(model, {})[lang] = _score_cached(f, _score_acr_file)
     out["ACR"] = acr
 
     ctr = {}
     for lang in LANGS:
         for f in (results_dir / "ctr" / lang).glob("ctr_*.pkl"):
             model = _model_from_filename(f.name, f"ctr_{lang}_")
-            ctr.setdefault(model, {})[lang] = _score_mcqa_file(f)
+            ctr.setdefault(model, {})[lang] = _score_cached(f, _score_mcqa_file)
     out["CTR"] = ctr
 
     for task in ("cl", "si"):
@@ -348,7 +388,7 @@ def _collect_scores(results_dir: Path) -> dict:
             for lang in LANGS:
                 for f in (results_dir / task / lang / mode).glob(f"{task}_{mode}_{lang}_*.pkl"):
                     model = _model_from_filename(f.name, f"{task}_{mode}_{lang}_")
-                    bucket.setdefault(model, {})[lang] = _score_mcqa_file(f)
+                    bucket.setdefault(model, {})[lang] = _score_cached(f, _score_mcqa_file)
             out[label] = bucket
 
     return out
