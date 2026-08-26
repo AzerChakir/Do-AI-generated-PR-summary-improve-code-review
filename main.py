@@ -32,6 +32,16 @@ Scoring mirrors utils.py exactly:
 Place this file in the root of the CodeReviewQA repo (next to ACR_vLLM.py,
 CTR_vLLM.py, CL_vLLM.py, SI_vLLM.py, and utils.py).
 
+Summary vs no-summary runs
+--------------------------
+`python main.py --summary` uses AzerChakir/CodeReviewWithSummaryQA and
+stores every .pkl/CSV under results_summary/; `python main.py` (no flag)
+uses Tomo-Melb/CodeReviewQA under results_nosummary/. The two trees are
+fully isolated, so campaigns never overwrite each other and can run in
+parallel. After both have data, `python main.py --compare-only` merges
+the two global summaries into comparison_summary_effect.csv with
+<task>_sum / <task>_nosum / <task>_delta columns per model.
+
 --------------------------------------------------------------------------
  EDIT THESE CONSTANTS BEFORE RUNNING
 --------------------------------------------------------------------------
@@ -142,6 +152,21 @@ import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parent
 RESULTS_DIR = REPO_ROOT / "results"
+
+# Variant-isolated result trees: --summary runs save under SUMMARY_DIR_NAME,
+# plain runs (no-summary dataset) under NOSUMMARY_DIR_NAME. PKL checkpoints
+# and CSVs never mix between the two campaigns.
+SUMMARY_DIR_NAME = "results_summary"
+NOSUMMARY_DIR_NAME = "results_nosummary"
+
+
+def _resolve_results_dir(value, with_summary):
+    """Turn the --results-dir argument into an absolute Path; when unset,
+    pick the tree matching the dataset variant."""
+    if value is None:
+        value = SUMMARY_DIR_NAME if with_summary else NOSUMMARY_DIR_NAME
+    path = Path(value)
+    return path if path.is_absolute() else REPO_ROOT / path
 
 # Exactly the language argument strings the four *_vLLM.py scripts expect
 # (see README "Usage"): language.lower() must match the dataset's `lang`
@@ -489,6 +514,45 @@ def generate_csvs(results_dir: Path = None):
     print(f"[CSV] GLOBAL: {summary_path} ({len(summary_rows)} model(s))")
 
 
+def generate_comparison(repo_root: Path = None):
+    """Merge results_summary/global_rerults.csv and
+    results_nosummary/global_rerults.csv into comparison_summary_effect.csv:
+    one row per model with <task>_sum, <task>_nosum and <task>_delta
+    (summary minus no-summary) for every task column. Missing entries stay
+    blank so partially finished campaigns still compare cleanly."""
+    repo_root = Path(repo_root) if repo_root else REPO_ROOT
+    cols = ["ACR", "CTR", "CLE", "CLH", "SIE", "SIH"]
+
+    def _load(tree_name):
+        path = repo_root / tree_name / "global_rerults.csv"
+        return {r["model"]: r for r in _read_existing_rows(path, "model")}, path
+
+    sum_rows, sum_path = _load(SUMMARY_DIR_NAME)
+    nosum_rows, nosum_path = _load(NOSUMMARY_DIR_NAME)
+
+    merged = []
+    for model in sorted(set(sum_rows) | set(nosum_rows)):
+        s = sum_rows.get(model, {})
+        n = nosum_rows.get(model, {})
+        row = {"model": model}
+        for col in cols:
+            sv, nv = s.get(col, ""), n.get(col, "")
+            row[f"{col}_sum"] = sv
+            row[f"{col}_nosum"] = nv
+            try:
+                delta = round(float(sv) - float(nv), 2)
+                row[f"{col}_delta"] = delta if delta == delta else ""
+            except (TypeError, ValueError):
+                row[f"{col}_delta"] = ""
+        merged.append(row)
+
+    out_path = repo_root / "comparison_summary_effect.csv"
+    columns = ["model"] + [f"{c}_{s}" for c in cols for s in ("sum", "nosum", "delta")]
+    pd.DataFrame(merged, columns=columns).to_csv(out_path, index=False)
+    print(f"[CSV] COMPARISON: {out_path} ({len(merged)} model(s)) "
+          f"[summary tree: {sum_path.exists()}, no-summary tree: {nosum_path.exists()}]")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Run all CodeReviewQA tasks across all languages for each "
@@ -511,25 +575,35 @@ def main():
              "the CSV summaries from whatever results already exist.",
     )
     parser.add_argument(
-        "--results-dir", type=str, default="results",
+        "--compare-only", action="store_true",
+        help="Only (re)build comparison_summary_effect.csv from the "
+             "results_summary/ and results_nosummary/ global tables; runs "
+             "nothing and touches neither tree.",
+    )
+    parser.add_argument(
+        "--results-dir", type=str, default=None,
         help="Output directory (relative to the repo root) where experiment "
-             ".pkl results and generated CSVs live. Use a separate value to keep "
-             "an experiment isolated from previous ones, e.g. "
-             "--results-dir results/summary for the summary-dataset runs so the "
-             "old results/ CSVs (non-summary dataset) are left untouched.",
+             ".pkl results and generated CSVs live. When omitted, the tree is "
+             "chosen by dataset variant: results_summary/ for --summary runs, "
+             "results_nosummary/ otherwise.",
+    )
+    parser.add_argument(
+        "--summary", dest="with_summary", action="store_true",
+        help="Use the summary dataset AzerChakir/CodeReviewWithSummaryQA, pass "
+             "--summary to the *_vLLM.py scripts, and save under results_summary/. "
+             "Without this flag the non-summary dataset Tomo-Melb/CodeReviewQA is "
+             "used and results go to results_nosummary/.",
     )
     parser.add_argument(
         "--no-summary", dest="with_summary", action="store_false",
-        help="Do NOT pass --summary to the *_vLLM.py scripts, i.e. use the "
-             "non-summary dataset Tomo-Melb/CodeReviewQA instead of "
-             "AzerChakir/CodeReviewWithSummaryQA (default: summary is ON).",
+        help="Redundant safety alias: explicitly select the non-summary dataset "
+             "(this is already the default behaviour).",
     )
     parser.add_argument(
         "--tier", type=str, choices=["small", "medium", "large"],
         help="Run only models from a specific GPU tier instead of all of MODEL_LIST. "
              "small=≤16B (1 GPU), medium=≤34B (2 GPUs), large=≤72B (4 GPUs).",
     )
-    parser.set_defaults(with_summary=True)
     args = parser.parse_args()
 
     model_list = MODEL_LIST
@@ -621,19 +695,21 @@ def main():
         print("ERROR: No models to run. Edit MODEL_LIST in main.py or use --tier.")
         sys.exit(1)
 
-    results_dir = Path(args.results_dir)
-    if not results_dir.is_absolute():
-        results_dir = REPO_ROOT / results_dir
+    results_dir = _resolve_results_dir(args.results_dir, args.with_summary)
+    print(f"Results directory: {results_dir}")
 
     failures = []
-    if not args.csv_only:
+    if not (args.csv_only or args.compare_only):
         failures = run_all(model_list, HF_TOKEN, args.skip_existing, args.dry_run, results_dir, args.with_summary)
 
     if args.dry_run:
         print("Dry run complete — CSV export was not actually executed.")
+    elif args.compare_only:
+        generate_comparison()
     else:
         print("\n--- Aggregating results into CSVs ---")
         generate_csvs(results_dir)
+        generate_comparison()
 
     if failures:
         sys.exit(1)

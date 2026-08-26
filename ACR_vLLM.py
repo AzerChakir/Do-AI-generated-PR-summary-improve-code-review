@@ -73,13 +73,13 @@ def main():
     save_dir = f"{results_root}/acr/{lang}/acr_{lang}_{model_name_short}.pkl"
     
     # Import Model
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code = True)
     sampling_params = SamplingParams(temperature = 0,
                                     max_tokens = 512,
                                     stop = ["[/{lang}]".format(lang = language_type)])     
                                
     check_gpu_memory(gpu_memory_utilization = 0.80)
-    llm = LLM(model = model_name, tensor_parallel_size = torch.cuda.device_count(), max_model_len = 4000, gpu_memory_utilization = 0.80)
+    llm = LLM(model = model_name, tensor_parallel_size = torch.cuda.device_count(), max_model_len = 4000, gpu_memory_utilization = 0.80, trust_remote_code = True)
     
     # Run Inference
     test_prompts = test_prompt(mcqa_set, language_type, use_summary)

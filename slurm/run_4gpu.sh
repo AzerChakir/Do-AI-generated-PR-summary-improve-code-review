@@ -32,4 +32,4 @@ echo "Date: $(date)"
 echo "Node: $(hostname)"
 nvidia-smi
 
-python main.py --tier large --results-dir results
+python main.py --tier large --summary

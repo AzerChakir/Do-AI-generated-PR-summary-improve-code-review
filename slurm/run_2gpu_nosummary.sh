@@ -7,7 +7,7 @@
 #SBATCH --mem=64G
 #SBATCH --gpus-per-node=h100:2
 #SBATCH --time=72:00:00
-#SBATCH --job-name=crqa-medium
+#SBATCH --job-name=crqa-medium-nosum
 
 # ── Environment setup ──────────────────────────────────────────────
 module load StdEnv/2023 cuda/12 python/3.11 scipy-stack/2024a
@@ -36,10 +36,10 @@ cd "$HOME/CodeReviewQA" || { echo "CodeReviewQA directory not found"; exit 1; }
 
 mkdir -p logs results
 
-# ── Run medium models (≤34B, 2 GPUs) ──────────────────────────────
-echo "=== Starting medium tier run (2 GPUs) ==="
+# ── Run medium models without PR summaries (≤34B, 2 GPUs) ─────────
+echo "=== Starting medium tier run, NO-SUMMARY dataset (2 GPUs) ==="
 echo "Date: $(date)"
 echo "Node: $(hostname)"
 nvidia-smi
 
-python main.py --tier medium --summary
+python main.py --tier medium

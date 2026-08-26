@@ -110,7 +110,7 @@ def main():
     save_dir = f"{results_root}/ctr/{lang}/ctr_{lang}_{model_name_short}.pkl"
 
     # Import Model
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code = True)
     guided_decoding_params = GuidedDecodingParams(choice = ["A", "B", "C"])
     sampling_params = SamplingParams(temperature = 0,
                                     max_tokens = 512,
@@ -119,7 +119,7 @@ def main():
     
     
     check_gpu_memory(gpu_memory_utilization = 0.80)
-    llm = LLM(model = model_name, tensor_parallel_size = torch.cuda.device_count(), max_model_len = 4000, gpu_memory_utilization = 0.80)
+    llm = LLM(model = model_name, tensor_parallel_size = torch.cuda.device_count(), max_model_len = 4000, gpu_memory_utilization = 0.80, trust_remote_code = True)
 
     # Run Inference
     c_save = pd.DataFrame(columns = ['combinations', 'softmax_probs', 'model_answers', 'correct_answers','GT'])
