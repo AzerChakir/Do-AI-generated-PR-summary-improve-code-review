@@ -105,7 +105,7 @@ MODEL_LIST = [
     "mistralai/Mistral-Nemo-Instruct-2407",
 
     # ── ≤34B models (2 GPUs, --gpus=h100:2) ────────────────────────
-    "meta-llama/CodeLlama-34b-Instruct-hf",
+   # "meta-llama/CodeLlama-34b-Instruct-hf",
     "google/gemma-2-27b-it",
     "Qwen/Qwen2.5-32B-Instruct",
     "Qwen/Qwen2.5-Coder-32B-Instruct",
@@ -115,9 +115,9 @@ MODEL_LIST = [
     "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
     "01-ai/Yi-1.5-34B-Chat",
     "mistralai/Mistral-Small-Instruct-2409",
-    "ibm-granite/granite-34b-code-instruct-8k",
-    "internlm/internlm2_5-20b-chat",
-    "LGAI-EXAONE/EXAONE-3.5-32B-Instruct",
+  #  "ibm-granite/granite-34b-code-instruct-8k",
+ #   "internlm/internlm2_5-20b-chat",
+   # "LGAI-EXAONE/EXAONE-3.5-32B-Instruct",
 
     # ── ≤72B models (4 GPUs, --gpus=h100:4) ────────────────────────
     "meta-llama/CodeLlama-70b-Instruct-hf",

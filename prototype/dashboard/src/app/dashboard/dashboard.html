@@ -1,0 +1,158 @@
+@if (health(); as h) {
+  <div class="hero">
+    <div class="hero-text">
+      <h1>PR Decomposer</h1>
+      <p>Analyze large pull requests, find the concerns hiding inside, split them into reviewer-friendly changes, and get a SWE-grade review of bugs and requirement compatibility.</p>
+    </div>
+    <div class="hero-health">
+      <span class="badge" [class.ok]="h.has_api_key" [class.warn]="!h.has_api_key">
+        {{ h.has_api_key ? 'LLM ready' : 'no LLM key' }}
+      </span>
+      <span class="badge neutral">model: {{ h.model }}</span>
+      <span class="badge neutral">{{ h.reports }} report(s)</span>
+      <span class="badge neutral" [class.warn]="!h.github_configured">
+        {{ h.github_configured ? 'GitHub token set' : 'no GitHub token' }}
+      </span>
+    </div>
+  </div>
+}
+
+<section class="analyze card">
+  <h2>Analyze a pull request</h2>
+  <p class="hint">
+    Examples: <code>owner/repo#123</code> or <code>https://github.com/owner/repo/pull/123</code>. Requires a GitHub token in the backend.
+    @if (health() !== null && !health()!.has_api_key) {
+      No LLM key configured — check “mock responses” below to analyze anyway (dev mode).
+    } @else {
+      Real analysis runs on the configured LLM (<span class="mono">{{ health()?.model }}</span>).
+    }
+  </p>
+  <form (ngSubmit)="analyze()">
+    @if (advanced()) {
+      <div class="row">
+        <input type="text" [(ngModel)]="advancedOwner" name="owner" placeholder="owner (org/user)" aria-label="owner" />
+        <span class="slash">/</span>
+        <input type="text" [(ngModel)]="advancedRepo" name="repo" placeholder="repo" aria-label="repo" />
+        <span class="slash">#</span>
+        <input type="number" [(ngModel)]="advancedPr" name="pr" min="1" placeholder="PR number" aria-label="pr number" />
+      </div>
+      <div class="row advanced-row">
+        <label>
+          Model
+          <select [(ngModel)]="model" name="model" [disabled]="mock()" aria-label="model">
+            @for (option of models(); track option.id) {
+              <option [value]="option.id">
+                {{ option.label }}@if (!option.verified) { (unverified) }
+              </option>
+            }
+          </select>
+        </label>
+        <label class="toggle">
+          <input type="checkbox" [(ngModel)]="deep" name="deep" />
+          <span>Deep review — extra verification pass over bugs &amp; requirements (2× LLM calls)</span>
+        </label>
+      </div>
+      <label class="block-label">
+        <span>Declared project requirements (optional, used for compatibility checks)</span>
+        <textarea
+          [(ngModel)]="requirements"
+          name="requirements"
+          rows="3"
+          placeholder="Paste the requirements/acceptance criteria for this repo, or leave empty to mine them from the repo docs (README, docs/REQUIREMENTS.md, …)"
+          aria-label="declared project requirements"
+        ></textarea>
+      </label>
+    } @else {
+      <div class="row">
+        <input
+          type="text"
+          [(ngModel)]="prInput"
+          name="prInput"
+          class="pr-input"
+          placeholder="owner/repo#123 or https://github.com/owner/repo/pull/123"
+          aria-label="pull request address"
+        />
+      </div>
+    }
+    @let target = parsedPr();
+    @if (!advanced() && prInput().trim()) {
+      @if (target) {
+        <p class="preview">
+          <span class="badge ok">resolved</span>
+          <span class="mono">{{ target.owner }}/{{ target.repo }}#{{ target.pr }}</span>
+          <a class="link" [attr.href]="'https://github.com/' + target.owner + '/' + target.repo + '/pull/' + target.pr" target="_blank" rel="noopener">open on GitHub ↗</a>
+        </p>
+      } @else {
+        <p class="preview error-inline">
+          <span class="badge warn">unrecognized</span>
+          <span class="mono">expected owner/repo#123 or a github.com/pull/ URL</span>
+        </p>
+      }
+    }
+    <div class="actions">
+      <button type="button" class="link" (click)="toggleAdvanced()">
+        {{ advanced() ? '‹ single address input' : 'advanced: owner / repo / PR number ›' }}
+      </button>
+      <label class="toggle">
+        <input type="checkbox" [(ngModel)]="mock" name="mock" />
+        <span>Dev: use mock LLM responses (no model call) — off for real results</span>
+      </label>
+      <button type="submit" [disabled]="analyzing() || !target">
+        {{ analyzing() ? 'Analyzing…' : 'Analyze PR' }}
+      </button>
+    </div>
+  </form>
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+  @if (success()) {
+    <p class="success">{{ success() }}</p>
+  }
+</section>
+
+<section class="reports card">
+  <h2>Analyzed pull requests</h2>
+
+  @if (loading()) {
+    <p class="hint">Loading…</p>
+  }
+
+  @if (!loading() && !reports().length && !error()) {
+    <p class="hint">
+      No reports yet. Analyze a PR above, or run the CLI and the JSON will appear here.
+    </p>
+  }
+
+  @if (reports().length) {
+    <table>
+      <thead>
+        <tr>
+          <th>PR</th>
+          <th>Title</th>
+          <th>Verdict</th>
+          <th>Concerns</th>
+          <th>Flags</th>
+          <th>Analyzed</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (report of reports(); track report.report_id) {
+          <tr>
+            <td class="mono">
+              <a [routerLink]="['/reports', report.report_id]">{{ report.repo }}{{ report.pr_number ? '#' + report.pr_number : '' }}</a>
+            </td>
+            <td>{{ report.title }}</td>
+            <td><span class="badge" [class.multi]="report.verdict === 'multiple PRs'" [class.single]="report.verdict === 'single PR'">{{ report.verdict }}</span></td>
+            <td class="center">{{ report.concerns }}</td>
+            <td class="center">{{ report.flags }}</td>
+            <td class="mono small">{{ formatDate(report.analyzed_at_iso) }}</td>
+            <td>
+              <button class="link danger" (click)="deleteReport(report.report_id)">delete</button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</section>

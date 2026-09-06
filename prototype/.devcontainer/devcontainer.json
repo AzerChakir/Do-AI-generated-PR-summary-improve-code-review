@@ -1,0 +1,27 @@
+{
+  "name": "PR Decomposer",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "postCreateCommand": "pip install --no-cache-dir -r requirements.txt && cd dashboard && npm install",
+  "forwardPorts": [8000, 4200],
+  "portsAttributes": {
+    "8000": {
+      "label": "API (FastAPI)",
+      "onAutoForward": "notify"
+    },
+    "4200": {
+      "label": "Dashboard (Angular)",
+      "onAutoForward": "notify"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "angular.ng-template"
+      ]
+    }
+  }
+}

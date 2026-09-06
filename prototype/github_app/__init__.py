@@ -1,0 +1,1 @@
+"""GitHub App integration package (Phase 2 skeleton)."""
