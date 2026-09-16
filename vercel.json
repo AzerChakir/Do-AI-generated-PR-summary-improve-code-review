@@ -4,7 +4,7 @@
     {
       "src": "package.json",
       "use": "@vercel/static-build",
-      "config": { "distDir": "prototype/dashboard/dist/dashboard" }
+      "config": { "distDir": "prototype/dashboard/dist/dashboard/browser" }
     },
     {
       "src": "vercel/index.py",
