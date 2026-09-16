@@ -14,11 +14,14 @@ Layout
 from __future__ import annotations
 
 import json
+import os
 import re
 from datetime import datetime, timezone
 from pathlib import Path
 
-DATA_ROOT = Path(__file__).resolve().parent.parent / "data" / "reports"
+DATA_ROOT = Path(
+    os.environ.get("DATA_DIR", Path(__file__).resolve().parent.parent / "data")
+) / "reports"
 
 
 class ReportNotFoundError(Exception):

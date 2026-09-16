@@ -38,6 +38,8 @@ class Config:
     github_client_id: str = ""
     github_client_secret: str = ""
     github_redirect_uri: str = ""
+    frontend_url: str = ""
+    data_dir: str = ""
     # All entries seen in the environment, kept for debugging/inspection.
     raw: dict = field(default_factory=dict)
 
@@ -101,6 +103,10 @@ def load_config(env_file: Path | None = None, overrides: dict | None = None) -> 
     except ValueError:
         max_tokens = 4096
 
+    frontend_url_val = _get("APP_URL", "FRONTEND_URL", "VERCEL_URL")
+    if frontend_url_val and not frontend_url_val.startswith(("http://", "https://")):
+        frontend_url_val = f"https://{frontend_url_val}"
+
     return Config(
         api_key=api_key,
         base_url=base_url,
@@ -121,5 +127,7 @@ def load_config(env_file: Path | None = None, overrides: dict | None = None) -> 
             "GITHUB_REDIRECT_URI",
             default="http://localhost:8000/api/auth/callback",
         ),
+        frontend_url=frontend_url_val or "http://localhost:4200",
+        data_dir=_get("DATA_DIR"),
         raw=dict(merged),
     )

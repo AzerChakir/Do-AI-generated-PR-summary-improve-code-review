@@ -16,6 +16,7 @@ Endpoints using these helpers are in prototype/api.py.
 from __future__ import annotations
 
 import json
+import os
 import secrets
 import uuid
 from datetime import datetime, timezone
@@ -28,7 +29,9 @@ GITHUB_AUTHORIZE_URL = "https://github.com/login/oauth/authorize"
 GITHUB_TOKEN_URL = "https://github.com/login/oauth/access_token"
 GITHUB_API = "https://api.github.com"
 
-DATA_ROOT = Path(__file__).resolve().parent / "data"
+DATA_ROOT = Path(
+    os.environ.get("DATA_DIR", Path(__file__).resolve().parent / "data")
+)
 USERS_PATH = DATA_ROOT / "github_users.json"
 SESSIONS_PATH = DATA_ROOT / "sessions.json"
 STATE_PATH = DATA_ROOT / "oauth_state.json"

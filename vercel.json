@@ -1,0 +1,19 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "prototype/dashboard/dist/dashboard" }
+    },
+    {
+      "src": "vercel/index.py",
+      "use": "@vercel/python",
+      "config": { "maxLambdaSize": "15mb" }
+    }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "vercel/index.py" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
+}

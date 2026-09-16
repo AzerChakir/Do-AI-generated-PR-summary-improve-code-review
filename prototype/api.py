@@ -47,6 +47,7 @@ from pr_decomposer.models import available_models
 from pr_decomposer.report_export import build_html, build_markdown, build_pdf
 from pr_decomposer.repo_context import compose_requirements, fetch_repo_requirements
 from pr_decomposer.store import (
+    DATA_ROOT,
     ReportNotFoundError,
     delete_report,
     list_reports,
@@ -56,17 +57,22 @@ from pr_decomposer.store import (
     save_report,
 )
 
+CONFIG = load_config(PROTOTYPE_ROOT / ".env")
+
 app = FastAPI(title="PR Decomposer API")
 
+FRONTEND_URL = CONFIG.frontend_url
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:4200", "http://127.0.0.1:4200"],
+    allow_origins=[
+        "http://localhost:4200",
+        "http://127.0.0.1:4200",
+        CONFIG.frontend_url,
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-CONFIG = load_config(PROTOTYPE_ROOT / ".env")
 
 
 class AnalyzeRequest(BaseModel):
@@ -184,8 +190,6 @@ def analyze(req: AnalyzeRequest, request: Request) -> AnalyzeResponse:
 
 
 # ── GitHub "Connect your account" (OAuth) ────────────────────────────────────
-
-FRONTEND_URL = "http://localhost:4200"
 
 
 @app.get("/api/auth/status")
@@ -384,7 +388,7 @@ def _build_pdf_bytes(payload: dict) -> bytes:
 @app.delete("/api/reports/{report_id}")
 def remove(report_id: str, request: Request) -> dict:
     _require_owner(request, report_id)
-    if not (PROTOTYPE_ROOT / "data" / "reports" / f"{report_id}.json").exists():
+    if not (DATA_ROOT / f"{report_id}.json").exists():
         raise HTTPException(status_code=404, detail=f"report '{report_id}' not found")
     delete_report(report_id)
     return {"deleted": report_id}
