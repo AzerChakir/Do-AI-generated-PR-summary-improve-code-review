@@ -40,6 +40,8 @@ export class ReportDetail {
   report = signal<Report | null>(null);
   error = signal('');
   downloading = signal<'' | 'html' | 'md' | 'pdf'>('');
+  planOpen = signal(false);
+  reviewOpen = signal(false);
 
   readonly readinessLabels = READINESS_LABELS;
 
@@ -110,6 +112,14 @@ export class ReportDetail {
     return [...checks].sort(
       (a, b) => (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9),
     );
+  }
+
+  togglePlan(): void {
+    this.planOpen.update((value) => !value);
+  }
+
+  toggleReview(): void {
+    this.reviewOpen.update((value) => !value);
   }
 
   planHtml(report: Report): string {

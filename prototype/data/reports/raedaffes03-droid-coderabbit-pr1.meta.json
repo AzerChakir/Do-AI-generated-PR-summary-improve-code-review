@@ -1,0 +1,12 @@
+{
+  "report_id": "raedaffes03-droid-coderabbit-pr1",
+  "title": "Add user fetching and printing functions",
+  "repo": "raedaffes03-droid/coderabbit",
+  "pr_number": 1,
+  "verdict": "single PR",
+  "concerns": 1,
+  "flags": 0,
+  "merge_readiness": "fix-before-merge",
+  "model": "nvidia/nemotron-3-super-120b-a12b",
+  "analyzed_at_iso": "2026-09-16T15:26:42.947779+00:00"
+}

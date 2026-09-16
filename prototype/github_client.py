@@ -289,6 +289,142 @@ class GithubApiDiffSource:
         return resp.json()
 
 
+def list_open_prs(token: str, max_repos: int = 20) -> list[dict]:
+    """Open PRs the connected user can see, newest first.
+
+    Fetches the user's own + collaborator repos (most recently updated) and the
+    open PRs in each, so the dashboard can offer one-click analysis without the
+    user pasting a URL.
+    """
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/vnd.github+json",
+    }
+    repos_resp = requests.get(
+        f"{GITHUB_API}/user/repos",
+        headers=headers,
+        params={
+            "affiliation": "owner,collaborator,organization_member",
+            "per_page": max_repos,
+            "sort": "updated",
+        },
+        timeout=60,
+    )
+    if repos_resp.status_code != 200:
+        raise GithubApiError(
+            f"list repos failed: HTTP {repos_resp.status_code} {repos_resp.text[:200]}"
+        )
+
+    prs: list[dict] = []
+    for repo in repos_resp.json() or []:
+        full_name = repo.get("full_name", "")
+        if not full_name:
+            continue
+        pulls_resp = requests.get(
+            f"{GITHUB_API}/repos/{full_name}/pulls",
+            headers=headers,
+            params={"state": "open", "per_page": 100},
+            timeout=60,
+        )
+        if pulls_resp.status_code != 200:
+            continue
+        owner, _, name = full_name.partition("/")
+        for pr in pulls_resp.json() or []:
+            pr_number = pr.get("number")
+            detail = pr
+            try:
+                detail_resp = requests.get(
+                    f"{GITHUB_API}/repos/{full_name}/pulls/{pr_number}",
+                    headers=headers,
+                    timeout=60,
+                )
+                if detail_resp.status_code == 200:
+                    detail = detail_resp.json()
+            except requests.RequestException:
+                pass
+            prs.append({
+                "owner": owner,
+                "repo": name,
+                "pr_number": pr_number,
+                "title": pr.get("title", "") or "(untitled PR)",
+                "repo_full": full_name,
+                "updated_at": pr.get("updated_at", ""),
+                "additions": detail.get("additions") or 0,
+                "deletions": detail.get("deletions") or 0,
+                "changed_files": detail.get("changed_files") or 0,
+                "draft": bool(pr.get("draft")),
+            })
+    prs.sort(key=lambda p: p.get("updated_at") or "", reverse=True)
+    return prs
+
+
+def pr_states(token: str, repo_prs: list[dict]) -> dict[str, dict]:
+    """Current GitHub state for each `{repo}#{pr_number}` in the report list.
+
+    Returns {key: {"state": ..., "merged": bool, "merged_at": ...}} where key is
+    `{full_repo}#{pr_number}`. Unresolvable PRs are skipped (caller decides).
+    """
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/vnd.github+json",
+    }
+    states: dict[str, dict] = {}
+    for item in repo_prs:
+        repo = item.get("repo") or ""
+        pr_number = item.get("pr_number")
+        if not repo or not isinstance(pr_number, int):
+            continue
+        key = f"{repo}#{pr_number}"
+        try:
+            resp = requests.get(
+                f"{GITHUB_API}/repos/{repo}/pulls/{pr_number}",
+                headers=headers,
+                timeout=60,
+            )
+            if resp.status_code != 200:
+                continue
+            data = resp.json()
+            merged_at = data.get("merged_at")
+            states[key] = {
+                "state": data.get("state", ""),
+                "merged": bool(merged_at),
+                "merged_at": merged_at or "",
+            }
+        except requests.RequestException:
+            continue
+    return states
+
+
+class _DictObj:
+    """Attribute-access adapter so dict payloads work with `prepare_comment_body`."""
+
+    def __init__(self, data: dict):
+        object.__setattr__(self, "_data", data)
+
+    def __getattr__(self, name: str):
+        value = self._data.get(name)
+        if isinstance(value, dict):
+            return _DictObj(value)
+        if isinstance(value, list):
+            return [_DictObj(item) if isinstance(item, dict) else item
+                    for item in value]
+        return value
+
+    def __bool__(self):
+        return bool(object.__getattribute__(self, "_data"))
+
+
+def comment_body_from_payload(payload: dict) -> str:
+    """Render a stored report payload (dict) as a GitHub PR comment."""
+    return prepare_comment_body(_DictObj(payload))
+
+
+def post_comment_from_payload(token: str, owner: str, repo: str,
+                              pr_number: int, payload: dict) -> int:
+    return post_pr_comment(token, owner, repo, pr_number,
+                           comment_body_from_payload(payload))
+
+
 def post_pr_comment(token: str, owner: str, repo: str, pr_number: int,
                     body: str) -> int:
     resp = requests.post(

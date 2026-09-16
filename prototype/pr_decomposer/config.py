@@ -35,6 +35,9 @@ class Config:
     github_webhook_secret: str = ""
     github_bot_username: str = "pr-decomposer[bot]"
     github_private_key_path: str = ""
+    github_client_id: str = ""
+    github_client_secret: str = ""
+    github_redirect_uri: str = ""
     # All entries seen in the environment, kept for debugging/inspection.
     raw: dict = field(default_factory=dict)
 
@@ -112,5 +115,11 @@ def load_config(env_file: Path | None = None, overrides: dict | None = None) -> 
         github_webhook_secret=_get("GITHUB_WEBHOOK_SECRET"),
         github_bot_username=_get("GITHUB_BOT_USERNAME", default="pr-decomposer[bot]"),
         github_private_key_path=_get("GITHUB_PRIVATE_KEY_PATH"),
+        github_client_id=_get("GITHUB_CLIENT_ID"),
+        github_client_secret=_get("GITHUB_CLIENT_SECRET"),
+        github_redirect_uri=_get(
+            "GITHUB_REDIRECT_URI",
+            default="http://localhost:8000/api/auth/callback",
+        ),
         raw=dict(merged),
     )

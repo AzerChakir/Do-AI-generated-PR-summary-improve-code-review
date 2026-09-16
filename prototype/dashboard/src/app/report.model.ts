@@ -91,6 +91,7 @@ export interface ReportMeta {
   verdict: string;
   concerns: number;
   flags: number;
+  merge_readiness: string;
   model: string;
   analyzed_at_iso: string;
 }
@@ -103,6 +104,27 @@ export interface Health {
   has_api_key: boolean;
   github_configured: boolean;
   reports: number;
+}
+
+export interface GithubAuth {
+  connected: boolean;
+  username: string;
+  display_name: string;
+  avatar_url: string;
+  oauth_configured: boolean;
+}
+
+export interface OpenPr {
+  owner: string;
+  repo: string;
+  pr_number: number;
+  title: string;
+  repo_full: string;
+  updated_at: string;
+  additions: number | null;
+  deletions: number | null;
+  changed_files: number | null;
+  draft: boolean;
 }
 
 export const SEVERITY_ORDER: Record<string, number> = {
