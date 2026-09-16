@@ -29,9 +29,17 @@ GITHUB_AUTHORIZE_URL = "https://github.com/login/oauth/authorize"
 GITHUB_TOKEN_URL = "https://github.com/login/oauth/access_token"
 GITHUB_API = "https://api.github.com"
 
-DATA_ROOT = Path(
-    os.environ.get("DATA_DIR", Path(__file__).resolve().parent / "data")
-)
+def _data_dir() -> Path:
+    """Writable runtime-data directory (see pr_decomposer.store._data_dir)."""
+    env_dir = os.environ.get("DATA_DIR")
+    if env_dir:
+        return Path(env_dir)
+    if os.environ.get("VERCEL"):
+        return Path("/tmp/prd-data")
+    return Path(__file__).resolve().parent / "data"
+
+
+DATA_ROOT = _data_dir()
 USERS_PATH = DATA_ROOT / "github_users.json"
 SESSIONS_PATH = DATA_ROOT / "sessions.json"
 STATE_PATH = DATA_ROOT / "oauth_state.json"

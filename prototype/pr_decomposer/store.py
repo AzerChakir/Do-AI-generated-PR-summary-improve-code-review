@@ -19,9 +19,22 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
-DATA_ROOT = Path(
-    os.environ.get("DATA_DIR", Path(__file__).resolve().parent.parent / "data")
-) / "reports"
+def _data_dir() -> Path:
+    """Writable runtime-data directory.
+
+    Prefers the DATA_DIR env var. On Vercel (detected via the auto-injected
+    VERCEL env var) only /tmp is writable, so fall back there; otherwise use
+    <backend>/data so no setup is needed anywhere.
+    """
+    env_dir = os.environ.get("DATA_DIR")
+    if env_dir:
+        return Path(env_dir)
+    if os.environ.get("VERCEL"):
+        return Path("/tmp/prd-data")
+    return Path(__file__).resolve().parent.parent / "data"
+
+
+DATA_ROOT = _data_dir() / "reports"
 
 
 class ReportNotFoundError(Exception):

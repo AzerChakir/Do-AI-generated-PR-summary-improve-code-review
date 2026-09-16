@@ -104,8 +104,20 @@ def load_config(env_file: Path | None = None, overrides: dict | None = None) -> 
         max_tokens = 4096
 
     frontend_url_val = _get("APP_URL", "FRONTEND_URL", "VERCEL_URL")
+    if not frontend_url_val and merged.get("VERCEL"):
+        # Vercel auto-injects these; the app then works with zero setup.
+        domain = (
+            merged.get("VERCEL_PROJECT_PRODUCTION_URL")
+            or merged.get("VERCEL_URL")
+            or ""
+        )
+        frontend_url_val = f"https://{domain}" if domain else ""
     if frontend_url_val and not frontend_url_val.startswith(("http://", "https://")):
         frontend_url_val = f"https://{frontend_url_val}"
+
+    data_dir = _get("DATA_DIR")
+    if not data_dir and merged.get("VERCEL"):
+        data_dir = "/tmp/prd-data"
 
     return Config(
         api_key=api_key,
@@ -128,6 +140,6 @@ def load_config(env_file: Path | None = None, overrides: dict | None = None) -> 
             default="http://localhost:8000/api/auth/callback",
         ),
         frontend_url=frontend_url_val or "http://localhost:4200",
-        data_dir=_get("DATA_DIR"),
+        data_dir=data_dir,
         raw=dict(merged),
     )
